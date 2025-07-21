@@ -6,16 +6,15 @@ services:
     image: "traefik"
     restart: always
     command:
-      - "--api.insecure=true"                   # Enable Traefik dashboard (local only)
-      - "--providers.docker=true"               # Enable Docker provider
-      - "--providers.docker.exposedbydefault=false" # Do not expose containers unless explicitly enabled
-      - "--entrypoints.web.address=:80"         # HTTP entrypoint
-      - "--entrypoints.websecure.address=:443"  # HTTPS entrypoint
-      - "--entrypoints.websecure.http.tls=true" # Enable TLS on websecure
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080"  # Traefik dashboard
+      - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./certs/localhost.crt:/certs/localhost.crt:ro
@@ -26,12 +25,15 @@ services:
     restart: always
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.n8n.rule=Host(`localhost`)"   # Route only on localhost
-      - "traefik.http.routers.n8n.entrypoints=websecure"   # Use HTTPS entrypoint
+      # HTTPS Router
+      - "traefik.http.routers.n8n.rule=Host(`localhost`)"
+      - "traefik.http.routers.n8n.entrypoints=websecure"
       - "traefik.http.routers.n8n.tls=true"
-      - "traefik.http.routers.n8n.tls.domains[0].main=localhost"
-      - "traefik.http.routers.n8n.tls.certresolver=selfsigned"
-      - "traefik.http.routers.n8n.tls.options=default"
+      # HTTP to HTTPS Redirect
+      - "traefik.http.routers.n8n-http.rule=Host(`localhost`)"
+      - "traefik.http.routers.n8n-http.entrypoints=web"
+      - "traefik.http.routers.n8n-http.middlewares=https-redirect"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
     environment:
       - N8N_HOST=localhost
       - N8N_PORT=5678
@@ -45,3 +47,4 @@ services:
 
 volumes:
   n8n_data:
+  
