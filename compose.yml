@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-
   traefik:
     image: "traefik"
     restart: always
@@ -25,12 +24,10 @@ services:
     restart: always
     labels:
       - "traefik.enable=true"
-      # HTTPS Router
-      - "traefik.http.routers.n8n.rule=Host(`localhost`)"
+      - "traefik.http.routers.n8n.rule=HostRegexp(`{host:.+}`)"
       - "traefik.http.routers.n8n.entrypoints=websecure"
       - "traefik.http.routers.n8n.tls=true"
-      # HTTP to HTTPS Redirect
-      - "traefik.http.routers.n8n-http.rule=Host(`localhost`)"
+      - "traefik.http.routers.n8n-http.rule=HostRegexp(`{host:.+}`)"
       - "traefik.http.routers.n8n-http.entrypoints=web"
       - "traefik.http.routers.n8n-http.middlewares=https-redirect"
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
@@ -47,4 +44,3 @@ services:
 
 volumes:
   n8n_data:
-  
