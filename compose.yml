@@ -1,1 +1,47 @@
-#cooking
+version: '3.8'
+
+services:
+
+  traefik:
+    image: "traefik"
+    restart: always
+    command:
+      - "--api.insecure=true"                   # Enable Traefik dashboard (local only)
+      - "--providers.docker=true"               # Enable Docker provider
+      - "--providers.docker.exposedbydefault=false" # Do not expose containers unless explicitly enabled
+      - "--entrypoints.web.address=:80"         # HTTP entrypoint
+      - "--entrypoints.websecure.address=:443"  # HTTPS entrypoint
+      - "--entrypoints.websecure.http.tls=true" # Enable TLS on websecure
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./certs/localhost.crt:/certs/localhost.crt:ro
+      - ./certs/localhost.key:/certs/localhost.key:ro
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.n8n.rule=Host(`localhost`)"   # Route only on localhost
+      - "traefik.http.routers.n8n.entrypoints=websecure"   # Use HTTPS entrypoint
+      - "traefik.http.routers.n8n.tls=true"
+      - "traefik.http.routers.n8n.tls.domains[0].main=localhost"
+      - "traefik.http.routers.n8n.tls.certresolver=selfsigned"
+      - "traefik.http.routers.n8n.tls.options=default"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - NODE_ENV=production
+      - WEBHOOK_URL=https://localhost/
+      - GENERIC_TIMEZONE=Asia/Kolkata
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./local-files:/files
+
+volumes:
+  n8n_data:
